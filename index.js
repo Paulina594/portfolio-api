@@ -30,7 +30,7 @@ app.use(function (req, res, next) {
 
 app.get('/verify-mail', (req, res) => {
   const transport = createTransport();
-  verifyTransport(transport)
+  verifyEmailConnection(transport)
     .then((message) => res.send(message))
     .catch((error) => res.send(error));
 });

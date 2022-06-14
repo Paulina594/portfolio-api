@@ -1,13 +1,17 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const app = express();
-const port = 8080;
+const CORS = process.env.CORS || 'http://localhost:3000';
+const PORT = process.env.PORT || 8080;
+const MAIL_HOST = process.env.MAIL_HOST || 'localhost';
+const MAIL_PORT = process.env.MAIL_PORT || 1025;
+const MAIL_SECURE = process.env.MAIL_SECURE ?? false;
 app.use(express.json());
 
 app.use(function (req, res, next) {
 
   // Website you wish to allow to connect
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Origin', CORS);
 
   // Request methods you wish to allow
   res.setHeader('Access-Control-Allow-Methods', 'POST');
@@ -24,6 +28,12 @@ app.use(function (req, res, next) {
 });
 
 
+app.get('/verify-mail', (req, res) => {
+  const transport = createTransport();
+  verifyTransport(transport)
+    .then((message) => res.send(message))
+    .catch((error) => res.send(error));
+});
 
 app.post('/send-mail', (req, res) => {
   const payload = req.body;
@@ -37,8 +47,8 @@ app.post('/send-mail', (req, res) => {
   res.send({ success: true });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`)
 })
 
 function createMessage(payload) {
@@ -54,21 +64,22 @@ function createMessage(payload) {
 
 function createTransport() {
   const transport = nodemailer.createTransport({
-    host: "localhost",
-    port: 1025,
-    secure: false, // upgrade later with STARTTLS
+    host: MAIL_HOST,
+    port: MAIL_PORT,
+    secure: MAIL_SECURE, // upgrade later with STARTTLS
   });
-  verifyEmailConnection(transport);
   return transport;
 }
 
 function verifyEmailConnection(transport) {
-  // verify connection configuration
-  transport.verify((error, success) => {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Server is ready to take our messages");
-    }
+  return new Promise((resolve, reject) => {
+    // verify connection configuration
+    transport.verify((error, success) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve('Server is ready to take our messages');
+      }
+    });
   });
 }
